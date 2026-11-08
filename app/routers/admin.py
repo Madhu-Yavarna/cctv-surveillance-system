@@ -374,6 +374,7 @@ def download_job_video(jid: int, db: Session = Depends(get_db)):
 
 @router.delete("/jobs/{jid}")
 def delete_job(jid: int, u=Depends(current_user), db: Session = Depends(get_db)):
+    runtime.cancel.add(jid)
     j = db.get(Job, jid)
     if not j: raise HTTPException(404, "Video record not found")
     if j.incident_id:

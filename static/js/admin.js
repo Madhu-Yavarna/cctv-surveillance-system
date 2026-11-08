@@ -1770,6 +1770,7 @@ async function loadAdminVideoHistory() {
           <div style="display:flex; gap:8px;">
             <button class="btn btn-outline btn-sm" onclick="window.open('/api/jobs/${job.id}/download', '_blank')">Download</button>
             <button class="btn btn-primary btn-sm" onclick="switchPage('incidents')">View Incidents</button>
+            <button class="btn btn-sm" onclick="deleteJob(${job.id}, '${(job.filename || '').replace(/'/g, "\\'")}')" style="background: rgba(255, 59, 48, 0.15); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.4); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" title="Delete this video analysis job"><span style="font-size:12px;">🗑️</span> Delete</button>
           </div>
         </td>
       `;
@@ -1813,3 +1814,26 @@ async function handleAdminPasswordChange(e) {
     showToast('Network error while changing password.', 'danger');
   }
 }
+
+async function deleteJob(jobId, filename) {
+  if (!confirm(`Are you sure you want to delete video job JOB-${jobId} (${filename || 'video'})?`)) {
+    return;
+  }
+  try {
+    const res = await fetch(`/api/jobs/${jobId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      showToast(data.message || `Job JOB-${jobId} deleted successfully`, 'success');
+      loadVideoJobs();
+      loadAdminStats();
+    } else {
+      showToast(data.detail || 'Could not delete job', 'error');
+    }
+  } catch (err) {
+    showToast('Failed to delete job: ' + err.message, 'error');
+  }
+}
+window.deleteJob = deleteJob;
