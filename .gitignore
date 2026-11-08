@@ -1,0 +1,42 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Environment and secrets
+.env
+.env.*
+secret.key
+*.key
+data/secret.key
+
+# Databases and SQLite WAL/SHM files
+*.db
+*.db-wal
+*.db-shm
+*.bak
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.bak
+surveillance.db
+
+# Storage, evidence files, and backups
+data/
+storage/
+data_backups/
+
+# PyTorch raw weights (ONNX model in models/yolov8n.onnx is used)
+*.pt
+
+# Scratch, temp, IDE
+scratch/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

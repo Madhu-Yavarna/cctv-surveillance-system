@@ -1,0 +1,33 @@
+# Python & Byte-compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+env/
+ENV/
+
+# Git & configuration
+.git/
+.gitignore
+.dockerignore
+.idea/
+.vscode/
+
+# Secrets and environment files
+.env
+.env.*
+*.key
+secret.key
+
+# Databases and persistent files
+*.db
+*.db-wal
+*.db-shm
+*.bak
+data/
+storage/
+data_backups/
+scratch/
+tests/
+*.pt

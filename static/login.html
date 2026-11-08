@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surveillance Command Center - Portal Selection & Login</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .login-wrapper {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 30%, #0d1e44 0%, #050a16 100%);
+      padding: 30px 20px;
+    }
+    .login-container {
+      width: 100%;
+      max-width: 520px;
+      text-align: center;
+    }
+    .system-brand {
+      margin-bottom: 24px;
+    }
+    .system-brand .logo-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #1b73e8, #00d2ff);
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      box-shadow: 0 0 25px rgba(27, 115, 232, 0.4);
+      margin-bottom: 12px;
+    }
+    .system-brand h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.3px;
+      margin-bottom: 4px;
+    }
+    .system-brand p {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .portal-selector-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .portal-select-btn {
+      background: #091326;
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px 14px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+    }
+    .portal-select-btn .portal-icon {
+      font-size: 26px;
+    }
+    .portal-select-btn .portal-label {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .portal-select-btn .portal-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .portal-select-btn:hover {
+      border-color: var(--border-highlight);
+      background: #0d1e40;
+    }
+    .portal-select-btn.active.admin {
+      border-color: var(--accent-blue);
+      background: rgba(27, 115, 232, 0.15);
+      box-shadow: 0 0 18px rgba(27, 115, 232, 0.35);
+    }
+    .portal-select-btn.active.police {
+      border-color: var(--accent-purple);
+      background: rgba(157, 78, 221, 0.15);
+      box-shadow: 0 0 18px rgba(157, 78, 221, 0.35);
+    }
+    .login-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-highlight);
+      border-radius: 16px;
+      padding: 34px 32px;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.6);
+      text-align: left;
+    }
+    .portal-header-badge {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .portal-title-box h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 3px;
+    }
+    .portal-title-box span {
+      font-size: 13px;
+      color: var(--accent-cyan);
+    }
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #ccd7ee;
+      margin-bottom: 8px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      background: #060d1d;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .form-group input:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(27, 115, 232, 0.25);
+    }
+    .btn-submit {
+      width: 100%;
+      padding: 13px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 8px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    .system-creds {
+      margin-top: 20px;
+      padding: 14px 16px;
+      background: rgba(14, 25, 52, 0.85);
+      border: 1px dashed var(--border-highlight);
+      border-radius: 10px;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.8;
+    }
+    .system-creds code {
+      color: var(--accent-cyan);
+      background: rgba(0, 210, 255, 0.1);
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-container">
+      <div class="system-brand">
+        <div class="logo-icon" id="brandIcon">🛡️</div>
+        <h1>Context-Aware Video Surveillance</h1>
+        <p>Central Surveillance & Real-Time Police Dispatch System</p>
+      </div>
+
+      <!-- Prominent Portal Selection (Admin vs Police) -->
+      <div class="portal-selector-grid">
+        <button type="button" class="portal-select-btn active admin" id="btnPortalAdmin" onclick="selectPortal('admin')">
+          <div class="portal-icon">🛡️</div>
+          <div class="portal-label">ADMIN LOGIN</div>
+          <div class="portal-sub">Central Management</div>
+        </button>
+
+        <button type="button" class="portal-select-btn police" id="btnPortalPolice" onclick="selectPortal('police')">
+          <div class="portal-icon">👮</div>
+          <div class="portal-label">POLICE LOGIN</div>
+          <div class="portal-sub">Emergency Response</div>
+        </button>
+      </div>
+
+      <!-- Authentication Form Card -->
+      <div class="login-card">
+        <div class="portal-header-badge">
+          <div class="portal-title-box">
+            <h2 id="portalHeading">Admin Portal Login</h2>
+            <span id="portalSubheading">Restricted Central Surveillance Access</span>
+          </div>
+          <span class="badge badge-online" id="portalBadge">● Admin Mode</span>
+        </div>
+
+        <form id="loginForm" onsubmit="handlePortalLogin(event)">
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="username" placeholder="Enter username" value="admin" required autocomplete="username">
+          </div>
+
+          <div class="form-group" style="margin-top: 16px;">
+            <label>Password</label>
+            <input type="password" id="password" placeholder="Enter password" value="admin123" required autocomplete="current-password">
+          </div>
+
+          <div id="loginError" style="color: var(--accent-red); font-size: 13.5px; margin-top: 14px; padding: 10px 12px; background: rgba(255, 59, 48, 0.12); border: 1px solid rgba(255, 59, 48, 0.35); border-radius: 8px; display: none;"></div>
+
+          <button type="submit" class="btn btn-primary btn-submit" id="btnSubmitLogin">
+            Authenticate & Access Portal →
+          </button>
+        </form>
+
+        <div class="system-creds">
+          <strong>Verified Portal Credentials:</strong><br>
+          • Central Admin: <code>admin</code> / <code>admin123</code><br>
+          • Police Officer: <code>police</code> / <code>police123</code> (Central PS)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="/static/js/common.js"></script>
+  <script>
+    let currentSelectedPortal = 'admin';
+
+    function selectPortal(portal) {
+      currentSelectedPortal = portal;
+      const btnAdmin = document.getElementById('btnPortalAdmin');
+      const btnPolice = document.getElementById('btnPortalPolice');
+      const brandIcon = document.getElementById('brandIcon');
+      const portalHeading = document.getElementById('portalHeading');
+      const portalSubheading = document.getElementById('portalSubheading');
+      const portalBadge = document.getElementById('portalBadge');
+      const btnSubmit = document.getElementById('btnSubmitLogin');
+      const userInput = document.getElementById('username');
+      const passInput = document.getElementById('password');
+      const errEl = document.getElementById('loginError');
+      errEl.style.display = 'none';
+
+      if (portal === 'admin') {
+        btnAdmin.className = 'portal-select-btn active admin';
+        btnPolice.className = 'portal-select-btn police';
+        brandIcon.innerText = '🛡️';
+        portalHeading.innerText = 'Admin Portal Login';
+        portalSubheading.innerText = 'Restricted Central Surveillance Access';
+        portalBadge.innerText = '● Admin Mode';
+        portalBadge.className = 'badge badge-online';
+        btnSubmit.className = 'btn btn-primary btn-submit';
+        userInput.value = 'admin';
+        passInput.value = 'admin123';
+      } else {
+        btnPolice.className = 'portal-select-btn active police';
+        btnAdmin.className = 'portal-select-btn admin';
+        brandIcon.innerText = '👮';
+        portalHeading.innerText = 'Police Portal Login';
+        portalSubheading.innerText = 'Emergency Dispatch & Response Hub';
+        portalBadge.innerText = '● Police Mode';
+        portalBadge.className = 'badge badge-review';
+        btnSubmit.className = 'btn btn-primary btn-submit';
+        btnSubmit.style.background = 'linear-gradient(135deg, #2563eb, #9333ea)';
+        userInput.value = 'police';
+        passInput.value = 'police123';
+      }
+    }
+
+    async function handlePortalLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value.trim();
+      const errEl = document.getElementById('loginError');
+      errEl.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          errEl.innerText = data.detail || 'Authentication failed. Please verify credentials.';
+          errEl.style.display = 'block';
+          return;
+        }
+
+        // Strict role validation against selected portal
+        const userRole = data.role || (data.user && data.user.role);
+        if (currentSelectedPortal === 'admin' && userRole !== 'admin') {
+          errEl.innerText = 'Access Denied: You are attempting to access Central Admin with a Police Officer account. Please switch to POLICE LOGIN.';
+          errEl.style.display = 'block';
+          return;
+        }
+
+        if (currentSelectedPortal === 'police' && userRole !== 'police') {
+          errEl.innerText = 'Access Denied: You are attempting to access the Police Portal with an Admin account. Please switch to ADMIN LOGIN.';
+          errEl.style.display = 'block';
+          return;
+        }
+
+        // Store auth token and profile
+        localStorage.setItem('surveillance_token', data.access_token || data.token);
+        localStorage.setItem('surveillance_user', JSON.stringify(data));
+
+        showToast('Login successful! Accessing portal...', 'success');
+
+        if (currentSelectedPortal === 'admin') {
+          window.location.href = '/admin';
+        } else {
+          window.location.href = '/police';
+        }
+      } catch (err) {
+        errEl.innerText = 'Network error or backend server unreachable.';
+        errEl.style.display = 'block';
+      }
+    }
+
+    // Auto-select portal from query parameters e.g. /login?portal=police
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const reqPortal = params.get('portal');
+      const isSwitch = params.get('switch');
+
+      if (isSwitch) {
+        // Clear old session when switching portals explicitly
+        localStorage.removeItem('surveillance_token');
+        localStorage.removeItem('surveillance_user');
+      }
+
+      if (reqPortal === 'police') {
+        selectPortal('police');
+      } else {
+        selectPortal('admin');
+      }
+
+      // If not an explicit switch, redirect active session
+      if (!isSwitch) {
+        const token = localStorage.getItem('surveillance_token');
+        const user = JSON.parse(localStorage.getItem('surveillance_user') || '{}');
+        if (token && user.role) {
+          if (user.role === 'admin' && reqPortal !== 'police') window.location.href = '/admin';
+          else if (user.role === 'police' && reqPortal !== 'admin') window.location.href = '/police';
+        }
+      }
+    });
+  </script>
+</body>
+</html>

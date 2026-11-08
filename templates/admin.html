@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Context-Aware Video Surveillance - Central Admin Dashboard</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/leaflet.css">
+  <style>
+    .cam-item-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px;
+      background: rgba(14, 25, 52, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .cam-thumb {
+      width: 100px;
+      height: 65px;
+      background: #030712;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 1px solid var(--border-color);
+    }
+    .cam-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .upload-dropzone {
+      border: 2px dashed var(--border-highlight);
+      border-radius: 12px;
+      padding: 40px 20px;
+      text-align: center;
+      background: rgba(13, 24, 51, 0.5);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .upload-dropzone:hover, .upload-dropzone.dragover {
+      border-color: var(--accent-cyan);
+      background: rgba(27, 115, 232, 0.1);
+    }
+    .upload-icon {
+      font-size: 40px;
+      color: var(--accent-cyan);
+      margin-bottom: 12px;
+    }
+    .tab-pills {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tab-pill {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(14, 25, 52, 0.8);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .tab-pill.active {
+      background: var(--accent-blue);
+      color: #fff;
+      border-color: var(--accent-blue);
+    }
+    .map-overlay-box {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 500;
+      background: rgba(9, 18, 40, 0.92);
+      border: 1px solid var(--border-highlight);
+      border-radius: 8px;
+      padding: 10px 16px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      font-size: 12px;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="shield-icon">📷</div>
+        <div>
+          <div class="logo-title">Context-Aware Video Surveillance</div>
+        </div>
+      </div>
+
+      <ul class="sidebar-menu">
+        <li class="nav-item">
+          <a class="nav-link active" onclick="switchPage('dashboard')">
+            <span class="icon">🏠</span>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" onclick="switchPage('cameras')">
+            <span class="icon">📹</span>
+            <span>Camera Management</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" onclick="switchPage('upload')">
+            <span class="icon">📤</span>
+            <span>Video Upload</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" onclick="switchPage('incidents')">
+            <span class="icon">⚠️</span>
+            <span>Incidents</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" onclick="switchPage('settings')">
+            <span class="icon">⚙️</span>
+            <span>Settings</span>
+          </a>
+        </li>
+        <li class="nav-item" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+          <a class="nav-link portal-switch-link" href="/login?portal=police&switch=true" style="color: var(--accent-purple); font-weight: 700;">
+            <span class="icon">⇄</span>
+            <span>Switch to Police Portal</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" onclick="logout()" style="color: var(--accent-red);">
+            <span class="icon">🚪</span>
+            <span>Logout</span>
+          </a>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <div class="brand-name">Context-Aware Video Surveillance</div>
+          <div class="role-sublabel" id="pageHeaderSubtitle">Central Admin Dashboard</div>
+        </div>
+
+        <div class="header-right">
+          <div class="status-indicator">
+            <div class="pulse-dot"></div>
+            <span>System Online</span>
+          </div>
+
+          <div class="header-clock">
+            <span id="liveDate">24 Apr 2025</span>
+            <span>|</span>
+            <span id="liveTime" style="font-weight: 700; color: #fff;">15:24:17</span>
+          </div>
+
+          <div class="user-badge" onclick="switchPage('settings')">
+            <div class="user-avatar">A</div>
+            <span class="user-name" id="userNameLabel">Admin</span>
+            <span style="font-size: 10px; color: var(--text-muted);">▼</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Scrollable Subpages Content -->
+      <main class="page-content">
+
+        <!-- ==================== 1. DASHBOARD PAGE ==================== -->
+        <section id="page-dashboard" class="subpage active">
+          <!-- Summary Cards Grid (4 Essential Backend-Driven KPIs) -->
+          <div class="summary-grid">
+            <div class="stat-card blue">
+              <div class="stat-icon blue">📷</div>
+              <div class="stat-info">
+                <div class="stat-label">Total Connected Cameras</div>
+                <div class="stat-value" id="statTotalCameras">0</div>
+              </div>
+            </div>
+            <div class="stat-card orange">
+              <div class="stat-icon orange">⚠️</div>
+              <div class="stat-info">
+                <div class="stat-label">Total Detected Incidents</div>
+                <div class="stat-value" id="statTotalIncidents">0</div>
+              </div>
+            </div>
+            <div class="stat-card green">
+              <div class="stat-icon green">📹</div>
+              <div class="stat-info">
+                <div class="stat-label">Videos Analyzed</div>
+                <div class="stat-value" id="statVideosAnalyzed">0</div>
+              </div>
+            </div>
+            <div class="stat-card purple">
+              <div class="stat-icon purple">⏱</div>
+              <div class="stat-info">
+                <div class="stat-label">Pending / Active Incidents</div>
+                <div class="stat-value" id="statPendingIncidents">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Location & Geospatial Places Search Bar -->
+          <div class="geo-search-bar">
+            <div style="font-size: 24px; color: var(--accent-red); display: flex; align-items: center;">📍</div>
+            <div class="autocomplete-wrapper" style="flex: 1;">
+              <input type="text" id="dashLocationSearchInput" class="form-control" style="font-size: 15px; font-weight: 600;" placeholder="Search location, college, area, or landmark (e.g. Tadipalligudem, Hyderabad, Bangalore)..." autocomplete="off" oninput="onDashLocationSearch(this.value)">
+              <div class="autocomplete-dropdown" id="dashLocationDropdown"></div>
+            </div>
+            <button class="btn" style="background: linear-gradient(135deg, #7c3aed, #9333ea); color: #fff; border-radius: 20px; padding: 10px 20px; font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; white-space: nowrap;" onclick="triggerBrowserGeolocation()">
+              <span>🎯</span> Detect My Current Location
+            </button>
+            <div id="gpsStatusPill" style="font-size: 13px; color: var(--accent-green); background: rgba(0, 230, 118, 0.12); border: 1px solid rgba(0, 230, 118, 0.4); padding: 9px 18px; border-radius: 20px; white-space: nowrap; font-weight: 700;">
+              GPS: Standby
+            </div>
+          </div>
+
+          <!-- Main 2-Column Dashboard Layout -->
+          <div class="dashboard-main-grid">
+            <!-- Column 1: Live CCTV Feed -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <div class="dash-card-title">
+                  <span style="display: flex; align-items: center; gap: 8px;">
+                    <span style="color: var(--accent-red); font-size: 14px;">🔴</span>
+                    Live CCTV Feed - <span id="dashCamTitle">No Camera Selected</span>
+                  </span>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                  <select id="dashCameraSelect" onchange="onDashCameraChange(this.value)" class="form-control" style="width: auto; padding: 7px 14px; font-size: 13.5px; font-weight: 600;">
+                    <option value="">No Camera Connected</option>
+                  </select>
+                  <span class="badge" id="dashCamStatusBadge" style="background: rgba(255, 59, 48, 0.2); color: var(--accent-red); border: 1px solid rgba(255, 59, 48, 0.4); font-size: 12.5px; padding: 5px 14px; border-radius: 14px;">● Standby</span>
+                </div>
+              </div>
+              <div class="dash-card-body" style="padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+                <div class="live-video-wrapper" id="liveFeedContainer" style="background: #030712; position: relative; border-radius: 8px; overflow: hidden;">
+                  <img id="liveFeedImg" src="" class="live-video-feed" alt="Live CCTV Video Feed" style="display: none; width: 100%; height: 100%; object-fit: contain;">
+                  <div id="liveFeedPlaceholder" style="text-align: center; color: var(--text-muted); font-size: 14px; padding: 24px 16px;">
+                    <div style="font-size: 56px; margin-bottom: 14px; opacity: 0.85;">📹⃠</div>
+                    <div style="font-weight: 700; font-size: 17px; color: #fff;">No Live CCTV Camera Stream Connected</div>
+                    <p style="font-size: 13.5px; color: var(--text-muted); margin-top: 6px;">Add or activate a camera to monitor real-time surveillance</p>
+                    <button class="btn btn-primary" style="margin-top: 18px; font-size: 14.5px; padding: 10px 22px;" onclick="switchPage('cameras')">🔌 Connect CCTV</button>
+                  </div>
+                  <div class="live-badge" id="liveBadge" style="display: none; font-size: 13px; padding: 5px 12px;">● LIVE</div>
+                  <div class="resolution-badge" id="resBadge" style="display: none; font-size: 12.5px; padding: 4px 10px;">1080p • 25 FPS</div>
+                </div>
+
+                <!-- Camera Registered Details & Geolocation Display -->
+                <div id="dashCamMetaPanel" style="background: rgba(14, 25, 52, 0.85); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 18px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; font-size: 13.5px;">
+                  <div>
+                    <span style="color: var(--text-muted); font-size: 11.5px; display: block; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">CAMERA MODE</span>
+                    <strong id="dashCamMetaNameId" style="color: #fff; font-size: 14.5px; margin-top: 2px; display: block;">None Selected</strong>
+                  </div>
+                  <div>
+                    <span style="color: var(--text-muted); font-size: 11.5px; display: block; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">REGISTERED LOCATION</span>
+                    <strong id="dashCamMetaLocation" style="color: var(--accent-cyan); font-size: 14.5px; margin-top: 2px; display: block;">Location Unavailable</strong>
+                  </div>
+                  <div>
+                    <span style="color: var(--text-muted); font-size: 11.5px; display: block; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">GPS COORDINATES</span>
+                    <strong id="dashCamMetaCoords" style="color: #e2e8f0; font-size: 14.5px; margin-top: 2px; display: block;">Location Unavailable</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Column 2: Location Map & Real Nearby Police Stations -->
+            <div class="dash-card" style="display: flex; flex-direction: column;">
+              <div class="dash-card-header">
+                <div class="dash-card-title">
+                  <span style="display: flex; align-items: center; gap: 8px;">
+                    <span style="color: var(--accent-cyan); font-size: 16px;">📍</span>
+                    Location & Nearby Police Stations
+                  </span>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <button class="btn btn-outline btn-sm" style="font-size: 12.5px; padding: 6px 14px; color: var(--accent-cyan); border-color: rgba(0, 210, 255, 0.4);" onclick="detectAdminCurrentLocation()">
+                    🎯 My Current Location
+                  </button>
+                </div>
+              </div>
+              <div class="dash-card-body" style="padding: 16px; display: flex; flex-direction: column; gap: 14px; flex: 1;">
+                <div style="position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); flex-shrink: 0;">
+                  <div id="dashMap" class="map-frame" style="width: 100%;"></div>
+                  <div class="map-overlay-box" id="dashMapInfoBox" style="bottom: 12px; left: 12px; font-size: 12.5px; padding: 8px 14px; background: rgba(9, 18, 38, 0.9); border: 1px solid var(--border-highlight); border-radius: 6px;">
+                    <div style="font-weight: 700; color: #fff;" id="dashMapTargetLabel">Monitored Location</div>
+                    <div style="color: var(--accent-green); margin-top: 2px; font-weight: 600;" id="dashMapNearestStation">Nearest: Ready</div>
+                  </div>
+                </div>
+
+                <!-- Verified Nearby Police Stations List -->
+                <div>
+                  <div style="font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 16px;">🛡️</span> Nearby Police Stations
+                    </span>
+                    <span id="nearbyStationsCount" style="font-size: 12.5px; color: var(--accent-cyan); font-weight: 700;">0 stations found</span>
+                  </div>
+                  <div class="police-stations-list" id="nearbyPoliceStationsList">
+                    <div style="color: var(--text-muted); font-size: 13px; padding: 16px; text-align: center;">
+                      Detect your location or search a place above to view real nearby police stations.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== 2. CAMERA MANAGEMENT PAGE ==================== -->
+        <section id="page-cameras" class="subpage">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 style="font-size: 16px; font-weight: 700;">Manage CCTV Cameras</h2>
+            <button class="btn btn-primary" onclick="showAddCameraModal()">+ Add Camera</button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1.3fr; gap: 20px;">
+            <!-- Left: Camera Form -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <div class="dash-card-title">Camera Configuration</div>
+              </div>
+              <div class="dash-card-body">
+                <form id="camConfigForm" onsubmit="handleSaveCamera(event)">
+                  <div class="form-group">
+                    <label class="form-label">Camera Name</label>
+                    <input type="text" id="cfgCamName" class="form-control" value="Main Gate Camera" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Camera ID</label>
+                    <input type="text" id="cfgCamId" class="form-control" value="CAM-001" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">RTSP Stream URL</label>
+                    <input type="text" id="cfgCamUrl" class="form-control" value="sample_cctv_feed.mp4" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                      <span>CCTV Installation Location (Village / Town / City / Address)</span>
+                      <span id="camGeoBadge" style="font-size: 11.5px; font-weight: 600; color: var(--accent-cyan);">🌐 Real-World Geocoding</span>
+                    </label>
+                    <div class="autocomplete-wrapper">
+                      <input type="text" id="cfgCamLoc" class="form-control" placeholder="Type village, town, city, landmark, or address (e.g. Tadipalligudem)..." autocomplete="off" oninput="onCamLocationSearch(this.value)" onblur="autoGeocodeCamLocation()" onkeydown="handleCamLocKeyDown(event)" required>
+                      <div class="autocomplete-dropdown" id="camLocationDropdown"></div>
+                    </div>
+                    <div id="camGeoStatus" style="font-size: 12px; margin-top: 6px; padding: 6px 10px; border-radius: 6px; display: none; background: rgba(14, 25, 52, 0.7); border: 1px solid var(--border-color);">
+                    </div>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                      <label class="form-label" style="display: flex; justify-content: space-between;">
+                        <span>Latitude</span>
+                        <span style="font-size: 11px; color: var(--accent-green); font-weight: normal;">(Auto-filled)</span>
+                      </label>
+                      <input type="number" step="0.00001" id="cfgCamLat" class="form-control" placeholder="Latitude" required>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="display: flex; justify-content: space-between;">
+                        <span>Longitude</span>
+                        <span style="font-size: 11px; color: var(--accent-green); font-weight: normal;">(Auto-filled)</span>
+                      </label>
+                      <input type="number" step="0.00001" id="cfgCamLon" class="form-control" placeholder="Longitude" required>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button type="button" class="btn btn-outline" style="flex: 1;" onclick="testCameraConnection()">
+                      Test Connection
+                    </button>
+                    <button type="submit" class="btn btn-success" style="flex: 1;">
+                      Start Camera
+                    </button>
+                  </div>
+                  <div id="camTestResult" style="margin-top: 10px; font-size: 12px; display: none;"></div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Right: Connected Cameras List -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <div class="dash-card-title">Connected Cameras</div>
+              </div>
+              <div class="dash-card-body" id="connectedCamerasList">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== 3. VIDEO UPLOAD & ANALYSIS PAGE ==================== -->
+        <section id="page-upload" class="subpage">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <!-- Left: Dropzone -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <div class="dash-card-title">Video Upload</div>
+              </div>
+              <div class="dash-card-body">
+                <div class="upload-dropzone" id="videoDropzone" onclick="document.getElementById('videoFileInput').click()">
+                  <div class="upload-icon">☁️</div>
+                  <h3 style="font-size: 16px; margin-bottom: 8px; font-weight: 700;">Drag & Drop Video or Click to Browse</h3>
+                  <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">Select any supported video file from your laptop</p>
+                  <button type="button" class="btn btn-primary">📁 Select Video File</button>
+                  <p style="font-size: 12px; color: var(--accent-cyan); margin-top: 14px;">⚡ Upload & AI Analysis will start immediately upon selection</p>
+                  <input type="file" id="videoFileInput" style="display: none;" accept=".mp4,.avi,.mov,.mkv" onchange="handleImmediateVideoUpload(this)">
+                </div>
+
+                <div id="selectedFileInfo" style="display: none; margin-top: 14px; padding: 12px 16px; background: rgba(9, 19, 38, 0.85); border-radius: 8px; font-size: 13px; border: 1px solid var(--border-color);">
+                  <div style="font-weight: 700; color: #fff;" id="selectedFileName">video.mp4</div>
+                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px;" id="selectedFileSize">0 MB</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Upload Progress & Status -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <div class="dash-card-title">Upload & Processing Status</div>
+              </div>
+              <div class="dash-card-body">
+                <div style="margin-bottom: 16px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+                    <span id="uploadProgressLabel">Processing Progress</span>
+                    <span id="uploadProgressPercent">0%</span>
+                  </div>
+                  <div style="width: 100%; height: 8px; background: #0a142c; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color);">
+                    <div id="uploadProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #1877f2, #00d2ff); transition: width 0.3s;"></div>
+                  </div>
+                </div>
+
+                <div id="analysisStatusText" style="font-size: 13px; color: var(--accent-cyan); margin-bottom: 16px;">
+                  Ready for video file upload.
+                </div>
+
+                <div id="analysisSummaryCard" style="display: none; padding: 12px; background: rgba(13, 24, 51, 0.8); border: 1px solid var(--border-color); border-radius: 8px;">
+                  <h4 style="font-size: 13px; margin-bottom: 8px; color: #fff;">AI Detection Summary</h4>
+                  <p style="font-size: 12px; color: #ccc;" id="analysisSummaryDetails"></p>
+                  <div style="margin-top: 12px; display: flex; gap: 8px;">
+                    <button class="btn btn-primary btn-sm" onclick="switchPage('incidents')">Review Incidents</button>
+                    <button class="btn btn-outline btn-sm" onclick="reopenLastAnalysisModal()">View AI Outcome</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Uploaded Videos History & Analysis Records -->
+          <div class="dash-card">
+            <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="dash-card-title">Uploaded Video Analysis Records</div>
+              <button class="btn btn-outline btn-sm" onclick="loadAdminVideoHistory()">Refresh Records</button>
+            </div>
+            <div class="dash-card-body" style="padding: 0;">
+              <div class="custom-table-container">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th>Job ID</th>
+                      <th>Video File</th>
+                      <th>Upload Time</th>
+                      <th>Analysis Status</th>
+                      <th>Risk Outcome</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminVideoJobsTableBody">
+                    <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">Loading video records...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== 4. INCIDENT MANAGEMENT PAGE ==================== -->
+        <section id="page-incidents" class="subpage">
+          <!-- Filter Bar -->
+          <div class="dash-card" style="margin-bottom: 16px;">
+            <div class="dash-card-body" style="padding: 12px 16px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+              <select id="filterStatus" class="form-control" style="width: 160px;">
+                <option value="All Status">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="Under Review">Under Review</option>
+                <option value="Acknowledged">Acknowledged</option>
+                <option value="Responding">Responding</option>
+                <option value="Resolved">Resolved</option>
+              </select>
+
+              <select id="filterRisk" class="form-control" style="width: 160px;">
+                <option value="All Risk Levels">All Risk Levels</option>
+                <option value="High Risk">High Risk</option>
+                <option value="Medium Risk">Medium Risk</option>
+                <option value="Low Risk">Low Risk</option>
+              </select>
+
+              <input type="text" id="filterDate" class="form-control" style="width: 200px;" value="24/04/2025 - 24/04/2025">
+
+              <button class="btn btn-primary" onclick="loadIncidentsTable()">🔍 Search</button>
+            </div>
+          </div>
+
+          <!-- Incidents Table -->
+          <div class="custom-table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Incident ID</th>
+                  <th>Detection Time</th>
+                  <th>Source / Camera</th>
+                  <th>Location</th>
+                  <th>Risk Category</th>
+                  <th>Incident Status</th>
+                  <th>Assigned Station</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="incidentsTableBody">
+                <!-- Dynamically populated from database -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ==================== 5. SETTINGS PAGE ==================== -->
+        <section id="page-settings" class="subpage">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <!-- Left: Surveillance Configuration -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <div class="dash-card-title">Surveillance & Detection Parameters</div>
+              </div>
+              <div class="dash-card-body" style="padding: 22px;">
+                <form id="settingsForm" onsubmit="handleSaveSettings(event)">
+                  <div class="form-group">
+                    <label class="form-label">System Title / Deployment Zone</label>
+                    <input type="text" id="setSystemName" class="form-control" value="Context-Aware Video Surveillance" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Default Risk Anomaly Threshold</label>
+                    <select id="setRiskThreshold" class="form-control">
+                      <option value="High (70%)">High Risk (70% - Flag Immediate Threats)</option>
+                      <option value="Medium (50%)" selected>Medium Risk (50% - Standard Surveillance)</option>
+                      <option value="Strict (85%)">Strict Threshold (85% - Extreme Incidents Only)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Minimum Suspicious Activity Duration (Seconds)</label>
+                    <input type="number" id="setMinDuration" class="form-control" value="3" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Alert Cooldown Window (Seconds)</label>
+                    <input type="number" id="setCooldown" class="form-control" value="15" required>
+                  </div>
+
+                  <button type="submit" class="btn btn-primary" style="margin-top: 14px; padding: 11px 24px;">
+                    Save Configuration
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <!-- Right: Admin Security & System Diagnostics -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              <div class="dash-card">
+                <div class="dash-card-header">
+                  <div class="dash-card-title">Admin Security & Password</div>
+                </div>
+                <div class="dash-card-body" style="padding: 22px;">
+                  <form id="adminPasswordForm" onsubmit="handleAdminPasswordChange(event)">
+                    <div class="form-group">
+                      <label class="form-label">Current Password</label>
+                      <input type="password" id="admPwCurrent" class="form-control" placeholder="Current admin password" required>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">New Password</label>
+                      <input type="password" id="admPwNew" class="form-control" placeholder="Minimum 8 characters" required>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Confirm New Password</label>
+                      <input type="password" id="admPwConfirm" class="form-control" placeholder="Re-type new password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 10px; padding: 11px 24px;">
+                      Update Password
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <div class="dash-card">
+                <div class="dash-card-header">
+                  <div class="dash-card-title">System Health & AI Engine Diagnostics</div>
+                </div>
+                <div class="dash-card-body" style="padding: 20px; font-size: 14px; display: flex; flex-direction: column; gap: 14px;">
+                  <div style="display: flex; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);">
+                    <span style="color: var(--text-muted);">AI Detector Model</span>
+                    <span style="color: var(--accent-green); font-weight: 700;">YOLOv8n Neural Engine Active</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);">
+                    <span style="color: var(--text-muted);">Database Status</span>
+                    <span style="color: var(--accent-green); font-weight: 700;">SQLite Connected (data/cctv.db)</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);">
+                    <span style="color: var(--text-muted);">Real-Time Dispatch Hub</span>
+                    <span style="color: var(--accent-cyan); font-weight: 700;">Active WebSocket (/ws)</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Evidence Storage</span>
+                    <span style="color: #fff; font-weight: 600;">storage/evidence/ (SHA-256 Validated)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Incident Details & Confirmation Modal -->
+  <div class="modal-overlay" id="incidentModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="incModalTitle">Incident Review & Transfer</div>
+        <button onclick="closeIncidentModal()" style="background: none; border: none; color: #fff; font-size: 18px; cursor: pointer;">✕</button>
+      </div>
+      <div class="modal-body" id="incModalBody">
+        <!-- Injected details -->
+      </div>
+      <div class="modal-footer" id="incModalFooter">
+        <button class="btn btn-outline" onclick="closeIncidentModal()">Close</button>
+        <button class="btn btn-success" id="btnConfirmTransfer" onclick="confirmIncidentTransfer()">Confirm & Route to Police</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Immediate Video Analysis Result Popup Modal -->
+  <div class="modal-overlay" id="analysisResultModal" style="display: none;">
+    <div class="modal-content" style="max-width: 740px;">
+      <div class="modal-header">
+        <div class="modal-title">AI Video Analysis Outcome</div>
+        <button onclick="closeAnalysisResultModal()" style="background: none; border: none; color: #fff; font-size: 20px; cursor: pointer;">✕</button>
+      </div>
+      <div class="modal-body" id="analysisResultBody">
+        <!-- Injected Banner, Evidence Snapshot, and Outcomes -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeAnalysisResultModal()">Close</button>
+        <button class="btn btn-primary" id="btnResultReviewIncident" onclick="closeAnalysisResultModal(); switchPage('incidents');">Review Incident</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Incident Deletion Confirmation Modal -->
+  <div class="modal-overlay" id="deleteConfirmModal" style="display: none;">
+    <div class="modal-content" style="max-width: 580px;">
+      <div class="modal-header" style="background: rgba(220, 38, 38, 0.15); border-bottom: 1px solid rgba(220, 38, 38, 0.3);">
+        <div class="modal-title" style="color: #ff4d4f; display: flex; align-items: center; gap: 8px;">
+          <span>⚠️</span> Confirm Incident Deletion
+        </div>
+        <button onclick="closeDeleteConfirmModal()" style="background: none; border: none; color: #fff; font-size: 20px; cursor: pointer;">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 22px;">
+        <p id="deleteConfirmText" style="font-size: 14.5px; line-height: 1.6; color: #e2e8f0;"></p>
+        <div id="deleteWarningBox" style="margin-top: 14px; padding: 12px 14px; background: rgba(255, 149, 0, 0.12); border: 1px solid rgba(255, 149, 0, 0.3); border-radius: 8px; font-size: 13px; color: var(--accent-orange);">
+          Notice: Deletion is recorded in the system audit logs. If an active police investigation is ongoing, deletion is blocked unless forced.
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 22px;">
+        <button class="btn btn-outline" onclick="closeDeleteConfirmModal()">Cancel</button>
+        <button class="btn btn-danger" id="btnConfirmDelete" onclick="confirmDeleteIncident()">Permanently Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/static/js/leaflet.js"></script>
+  <script src="/static/js/common.js"></script>
+  <script src="/static/js/admin.js"></script>
+</body>
+</html>

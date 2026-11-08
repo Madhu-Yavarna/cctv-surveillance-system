@@ -1,0 +1,12 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+sqlalchemy>=2.0
+argon2-cffi>=23.1
+PyJWT>=2.7
+python-multipart>=0.0.9
+websockets>=12
+numpy
+scipy
+opencv-python-headless
+onnxruntime
+imageio-ffmpeg>=0.5.1

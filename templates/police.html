@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Police Response Dashboard - Context-Aware Video Surveillance</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/leaflet.css">
+  <style>
+    .police-latest-card {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 14px;
+      align-items: center;
+    }
+    .police-snapshot-box {
+      width: 140px;
+      height: 110px;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .police-snapshot-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .report-stat-box {
+      padding: 16px;
+      background: rgba(14, 25, 52, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+    .modal-section-box {
+      background: rgba(9, 18, 38, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+    .modal-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Police Sidebar with Exactly 9 Unified Modules -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="shield-icon" style="background: linear-gradient(135deg, #2563eb, #9333ea);">👮</div>
+        <div>
+          <div class="logo-title">Police Response System</div>
+        </div>
+      </div>
+
+      <ul class="sidebar-menu">
+        <li class="nav-item">
+          <a class="nav-link active" onclick="switchPolicePage('dashboard')">
+            <span class="icon">🏠</span>
+            <span>Dashboard Overview</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" onclick="switchPolicePage('response-center')">
+            <span class="icon">🛡️</span>
+            <span>Police Response Center</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" onclick="switchPolicePage('settings')">
+            <span class="icon">⚙️</span>
+            <span>Settings</span>
+          </a>
+        </li>
+        <li class="nav-item" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+          <a class="nav-link portal-switch-link" href="/login?portal=admin&switch=true" style="color: var(--accent-blue); font-weight: 700;">
+            <span class="icon">⇄</span>
+            <span>Switch to Admin Portal</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" onclick="logout()" style="color: var(--accent-red);">
+            <span class="icon">🚪</span>
+            <span>Logout</span>
+          </a>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-wrapper">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <div class="brand-name">Police Response Dashboard</div>
+          <div class="role-sublabel" id="policeHeaderSubtitle">Dashboard Overview</div>
+        </div>
+
+        <div class="header-right">
+          <div class="status-indicator">
+            <div class="pulse-dot"></div>
+            <span>System Online</span>
+          </div>
+
+          <div class="header-clock">
+            <span id="policeDate">24 Apr 2025</span>
+            <span>|</span>
+            <span id="policeTime" style="font-weight: 700; color: #fff;">15:25:37</span>
+          </div>
+
+          <div class="user-badge" onclick="switchPolicePage('settings')">
+            <div class="user-avatar police-avatar">P</div>
+            <span class="user-name" id="policeOfficerName">Police Officer</span>
+            <span style="font-size: 10px; color: var(--text-muted);">▼</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Scrollable Main Pages -->
+      <main class="page-content">
+
+        <!-- ==================== 1. DASHBOARD OVERVIEW ==================== -->
+        <section id="police-page-dashboard" class="subpage active">
+          <!-- Summary Cards -->
+          <div class="summary-grid" style="grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; width: 100%;">
+            <div class="stat-card blue">
+              <div class="stat-icon blue">🔔</div>
+              <div class="stat-info">
+                <div class="stat-label">Total Alerts</div>
+                <div class="stat-value" id="polStatTotal">0</div>
+              </div>
+            </div>
+            <div class="stat-card green">
+              <div class="stat-icon green">🚨</div>
+              <div class="stat-info">
+                <div class="stat-label">New Alerts</div>
+                <div class="stat-value" id="polStatNew">0</div>
+              </div>
+            </div>
+            <div class="stat-card orange">
+              <div class="stat-icon orange">⏱</div>
+              <div class="stat-info">
+                <div class="stat-label">Pending</div>
+                <div class="stat-value" id="polStatPending">0</div>
+              </div>
+            </div>
+            <div class="stat-card purple">
+              <div class="stat-icon purple">👁</div>
+              <div class="stat-info">
+                <div class="stat-label">Under Review</div>
+                <div class="stat-value" id="polStatReview">0</div>
+              </div>
+            </div>
+            <div class="stat-card active-status">
+              <div class="stat-icon emerald">✓</div>
+              <div class="stat-info">
+                <div class="stat-label">Resolved</div>
+                <div class="stat-value" id="polStatResolved">0</div>
+              </div>
+            </div>
+            <div class="stat-card blue">
+              <div class="stat-icon blue">🏛️</div>
+              <div class="stat-info">
+                <div class="stat-label">Your Station</div>
+                <div class="stat-value" id="polStatStation" style="font-size: 15px; color: var(--accent-cyan);">CPS-01</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Layout Grid -->
+          <div class="police-main-grid">
+            <!-- Left Card: Latest Incident Alert -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <div class="dash-card-title">
+                  <span>Latest Incident Alert</span>
+                </div>
+                <span class="badge" id="polLatestBadge" style="background: rgba(255, 59, 48, 0.2); color: var(--accent-red); border: 1px solid rgba(255, 59, 48, 0.4);">● Standby</span>
+              </div>
+              <div class="dash-card-body" style="padding: 14px;">
+                <div class="police-latest-card">
+                  <div class="police-snapshot-box" id="polSnapshotWrapper">
+                    <img id="polLatestSnapshot" src="" onerror="this.src='/static/images/marker-icon.png'" alt="Alert Snapshot" style="display: none;">
+                    <span id="polSnapshotPlaceholder" style="font-size: 28px; color: var(--text-muted);">📷</span>
+                  </div>
+                  <div>
+                    <div style="font-size: 13.5px; font-weight: 700; color: #fff; margin-bottom: 4px;">
+                      Incident ID: <span id="polLatestId" style="color: var(--accent-cyan);">None</span>
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px;">
+                      Time: <span id="polLatestTime" style="color: #ddd;">Waiting for incidents...</span>
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px;">
+                      Source: <span id="polLatestCamera" style="color: #ddd;">None</span>
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 6px;">
+                      Location: <span id="polLatestLocation" style="color: #ddd;">None</span>
+                    </div>
+                    <div>
+                      Risk Level: <span class="risk-level-badge low" id="polLatestRisk">Safe</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 16px;">
+                  <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="openPoliceDetailsModal()">
+                    👁 View Details
+                  </button>
+                  <button class="btn btn-success btn-sm" style="flex: 1;" id="btnPolAcknowledge" onclick="acknowledgeLatestAlert()">
+                    ✓ Acknowledge
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Middle Card: Incident Location Map -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <div class="dash-card-title">Incident Location & Route</div>
+              </div>
+              <div class="dash-card-body" style="padding: 0; position: relative; display: flex; flex-direction: column;">
+                <div id="policeDashMap" class="map-frame" style="flex: 1; height: clamp(200px, 30vh, 300px); min-height: 190px; width: 100%;"></div>
+                <div class="map-legend">
+                  <div class="legend-item"><span style="color: #1877f2;">📷</span> Camera</div>
+                  <div class="legend-item"><span style="color: #ff3b30;">📍</span> Incident</div>
+                  <div class="legend-item"><span style="color: #9d4edd;">🏛️</span> Police Station</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Police Alert Notifications & Response Status -->
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <!-- Police Alert Notifications Card (Replaces Evidence Viewer) -->
+              <div class="dash-card" style="flex: 1; display: flex; flex-direction: column;">
+                <div class="dash-card-header">
+                  <div class="dash-card-title">
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 16px;">🔔</span> Police Alert Notifications
+                    </span>
+                  </div>
+                  <span class="badge badge-pending" id="polAlertsCountBadge">0 Active</span>
+                </div>
+                <div class="dash-card-body" style="padding: 12px; display: flex; flex-direction: column; flex: 1;">
+                  <div class="police-alerts-list" id="polAlertsListContainer" style="max-height: clamp(140px, 24vh, 260px); overflow-y: auto;">
+                    <div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 30px 10px;">
+                      Loading real-time alert notifications...
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Response Status Controls Card -->
+              <div class="dash-card">
+                <div class="dash-card-header">
+                  <div class="dash-card-title">
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                      <span>⚡</span> Response Action & Dispatch
+                    </span>
+                  </div>
+                </div>
+                <div class="dash-card-body" style="padding: 12px;">
+                  <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <select id="polResponseStatusSelect" class="form-control" style="flex: 1; font-weight: 600;">
+                      <option value="Pending">Pending</option>
+                      <option value="Working">Working</option>
+                      <option value="Solved">Solved</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="submitPoliceResponse()">Update Status</button>
+                  </div>
+                  <input type="text" id="polRemarksInput" class="form-control" placeholder="Add remarks (e.g. Patrol Unit dispatched)...">
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== 2. POLICE RESPONSE CENTER (UNIFIED) ==================== -->
+        <section id="police-page-response-center" class="subpage">
+          <!-- Response Center Control & Status Toolbar -->
+          <div class="dash-card" style="margin-bottom: 20px;">
+            <div class="dash-card-body" style="padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+              <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                <div>
+                  <h2 style="font-size: 19px; font-weight: 800; color: #fff;">Police Response Center</h2>
+                  <p style="font-size: 13.5px; color: var(--text-muted); margin-top: 3px;">Consolidated operational stream: real-time risk incidents, evidence files & camera nodes</p>
+                </div>
+                <!-- Status Lifecycle Filters -->
+                <div class="tab-pills" style="margin-bottom: 0;">
+                  <button class="tab-pill active" id="tabRespAll" onclick="filterResponseStatus('ALL')">All Records</button>
+                  <button class="tab-pill" id="tabRespPending" onclick="filterResponseStatus('PENDING')">Pending</button>
+                  <button class="tab-pill" id="tabRespWorking" onclick="filterResponseStatus('WORKING')">Working</button>
+                  <button class="tab-pill" id="tabRespSolved" onclick="filterResponseStatus('SOLVED')">Solved</button>
+                </div>
+              </div>
+
+              <!-- Category Filter & Action Bar -->
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <select id="selectRecordCategory" class="form-control" style="width: 200px; padding: 10px 14px; font-size: 13.5px;" onchange="filterResponseCategory(this.value)">
+                  <option value="ALL">All Categories</option>
+                  <option value="INCIDENT">Risk Incidents Only</option>
+                  <option value="VIDEO">Video Processing Records</option>
+                  <option value="CCTV">CCTV Camera Nodes</option>
+                </select>
+                <button class="btn btn-primary" onclick="loadPoliceResponseCenter()">🔄 Refresh Stream</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI Summary Strip for Response Center -->
+          <div class="summary-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; width: 100%;">
+            <div class="stat-card red">
+              <div class="stat-icon red">🚨</div>
+              <div class="stat-info">
+                <div class="stat-label">Active Risk Incidents</div>
+                <div class="stat-value" id="respStatActiveIncidents">0</div>
+              </div>
+            </div>
+            <div class="stat-card orange">
+              <div class="stat-icon orange">⏱</div>
+              <div class="stat-info">
+                <div class="stat-label">Pending Response</div>
+                <div class="stat-value" id="respStatPending">0</div>
+              </div>
+            </div>
+            <div class="stat-card green">
+              <div class="stat-icon green">📹</div>
+              <div class="stat-info">
+                <div class="stat-label">Videos Processed</div>
+                <div class="stat-value" id="respStatVideos">0</div>
+              </div>
+            </div>
+            <div class="stat-card blue">
+              <div class="stat-icon blue">📷</div>
+              <div class="stat-info">
+                <div class="stat-label">Monitored CCTV Nodes</div>
+                <div class="stat-value" id="respStatCameras">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Unified Response Center Table -->
+          <div class="custom-table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Record ID</th>
+                  <th>Record Type</th>
+                  <th>Source / Node</th>
+                  <th>Location / Coordinates</th>
+                  <th>Risk Category / Outcome</th>
+                  <th>Timestamp / Duration</th>
+                  <th>Current Status</th>
+                  <th>Actions & Lifecycle</th>
+                </tr>
+              </thead>
+              <tbody id="policeResponseCenterTableBody">
+                <!-- Dynamically populated from merged DB streams -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ==================== 3. POLICE SETTINGS (FUNCTIONAL) ==================== -->
+        <section id="police-page-settings" class="subpage">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <!-- Card 1: Officer Profile & Station -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <div class="dash-card-title">👤 Officer Profile & Account</div>
+              </div>
+              <div class="dash-card-body" style="padding: 20px;">
+                <form id="policeProfileForm" onsubmit="handleSavePoliceProfile(event)">
+                  <div class="form-group">
+                    <label class="form-label">Full Name / Rank</label>
+                    <input type="text" id="setOfficerName" class="form-control" value="Inspector R. Sharma" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Station Badge Number</label>
+                    <input type="text" id="setOfficerBadge" class="form-control" value="IND-POL-5421" readonly style="opacity: 0.8; cursor: not-allowed;">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Assigned Station</label>
+                    <input type="text" id="setOfficerStation" class="form-control" value="Central Police Station (CPS-01)" readonly style="opacity: 0.8; cursor: not-allowed;">
+                  </div>
+                  <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Save Profile Changes</button>
+                </form>
+              </div>
+            </div>
+
+            <!-- Card 2: Notification Preferences -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <div class="dash-card-title">🔔 Notification & Sound Alerts</div>
+              </div>
+              <div class="dash-card-body" style="padding: 20px;">
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <label style="display: flex; align-items: center; justify-content: space-between; font-size: 14px; color: #fff; cursor: pointer;">
+                    <span>Audio Alert Chime on Emergency Incident</span>
+                    <input type="checkbox" id="prefSoundEnabled" checked style="width: 18px; height: 18px; cursor: pointer;" onchange="savePolicePreferences()">
+                  </label>
+                  <label style="display: flex; align-items: center; justify-content: space-between; font-size: 14px; color: #fff; cursor: pointer;">
+                    <span>Auto-Open Alert Modal on High-Risk Detections</span>
+                    <input type="checkbox" id="prefAutoOpenModal" checked style="width: 18px; height: 18px; cursor: pointer;" onchange="savePolicePreferences()">
+                  </label>
+                  <label style="display: flex; align-items: center; justify-content: space-between; font-size: 14px; color: #fff; cursor: pointer;">
+                    <span>Browser Desktop Notifications</span>
+                    <input type="checkbox" id="prefDesktopNotify" style="width: 18px; height: 18px; cursor: pointer;" onchange="toggleDesktopNotifications(this.checked)">
+                  </label>
+
+                  <div style="margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--border-color); display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="playAlertChime()">🔊 Test Sound Chime</button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="testDesktopNotification()">🔔 Test Notification</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3: Alert Filter Preferences -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <div class="dash-card-title">🚨 Incident Stream Preferences</div>
+              </div>
+              <div class="dash-card-body" style="padding: 20px;">
+                <div class="form-group">
+                  <label class="form-label">Alert Sensitivity Threshold</label>
+                  <select id="prefSensitivity" class="form-control" onchange="savePolicePreferences()">
+                    <option value="ALL">Show All Risk Levels (Low, Medium, High)</option>
+                    <option value="HIGH_ONLY">Urgent Emergencies Only (High Risk >= 70%)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Auto-Acknowledge Preference</label>
+                  <select id="prefAutoAck" class="form-control" onchange="savePolicePreferences()">
+                    <option value="MANUAL">Manual Officer Acknowledgement (Recommended)</option>
+                    <option value="AUTO_ON_VIEW">Auto-Mark Working When Details Viewed</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 4: Security & Password Update -->
+            <div class="dash-card">
+              <div class="dash-card-header">
+                <div class="dash-card-title">🔒 Account Security & Password</div>
+              </div>
+              <div class="dash-card-body" style="padding: 20px;">
+                <form id="policePasswordForm" onsubmit="handlePolicePasswordChange(event)">
+                  <div class="form-group">
+                    <label class="form-label">Current Password</label>
+                    <input type="password" id="pwCurrent" class="form-control" placeholder="••••••••" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">New Password (min 8 characters)</label>
+                    <input type="password" id="pwNew" class="form-control" placeholder="••••••••" required minlength="8">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Confirm New Password</label>
+                    <input type="password" id="pwConfirm" class="form-control" placeholder="••••••••" required minlength="8">
+                  </div>
+                  <button type="submit" class="btn btn-primary" style="margin-top: 6px;">Update Password</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Police Incident Details & Proof Modal (Rich, Non-Blank) -->
+  <div class="modal-overlay" id="policeIncidentModal">
+    <div class="modal-content" style="max-width: 940px; width: 92vw; max-height: 92vh; overflow-y: auto;">
+      <div class="modal-header">
+        <div class="modal-title" id="polModalTitle">Incident Alert & Forensic Proof</div>
+        <button onclick="closePoliceModal()" style="background: none; border: none; color: #fff; font-size: 20px; cursor: pointer;">✕</button>
+      </div>
+      <div class="modal-body" id="polModalBody" style="padding: 16px;">
+        <!-- Dynamically injected with complete proof -->
+      </div>
+      <div class="modal-footer" id="polModalFooter" style="display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn btn-outline" onclick="closePoliceModal()">Close</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-outline" onclick="modalShowOnMap()">📍 View Location</button>
+          <button class="btn btn-success" onclick="modalAcknowledgeIncident()">✓ Acknowledge</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/static/js/leaflet.js"></script>
+  <script src="/static/js/common.js"></script>
+  <script src="/static/js/police.js"></script>
+</body>
+</html>
