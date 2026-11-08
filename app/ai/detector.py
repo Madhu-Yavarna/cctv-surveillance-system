@@ -15,7 +15,10 @@ class Detector:
         path = path or config.MODEL_PATH
         if not path.exists():
             raise FileNotFoundError(f"YOLO model not found at {path}. Run: python scripts/export_model.py")
-        so = ort.SessionOptions(); so.intra_op_num_threads = 4
+        so = ort.SessionOptions()
+        so.intra_op_num_threads = 1
+        so.inter_op_num_threads = 1
+        so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
         self.sess = ort.InferenceSession(str(path), so, providers=["CPUExecutionProvider"])
         self.inp = self.sess.get_inputs()[0].name
         self.size, self.classes, self.conf, self.iou = size, set(classes), conf, iou

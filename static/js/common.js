@@ -1,5 +1,20 @@
 // Common Utilities for Context-Aware Video Surveillance System
 
+// Global fetch interceptor to gracefully redirect when token expires or server restarts
+if (typeof window !== 'undefined' && window.fetch) {
+  const _origFetch = window.fetch;
+  window.fetch = async function(...args) {
+    const res = await _origFetch.apply(this, args);
+    if (res.status === 401 && !window.location.pathname.includes('/login')) {
+      console.warn('Session expired. Redirecting to login...');
+      localStorage.removeItem('surveillance_token');
+      localStorage.removeItem('surveillance_user');
+      window.location.href = '/login?expired=true';
+    }
+    return res;
+  };
+}
+
 function getAuthToken() {
   return localStorage.getItem('surveillance_token');
 }

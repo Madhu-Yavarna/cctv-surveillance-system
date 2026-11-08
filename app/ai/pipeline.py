@@ -188,7 +188,10 @@ def analyze_video(path, detector, cfg, zone, on_event, on_progress=None, stop=la
         n += 1
         idx += 1
         if on_progress and n % 5 == 0:
-            on_progress(min(idx / total, 0.99) if total else 0.0)
+            if total > 0:
+                on_progress(min(idx / total, 0.99))
+            else:
+                on_progress(min(0.3 + (n * 0.03), 0.95))
 
     # Process finish events
     if not stop():
