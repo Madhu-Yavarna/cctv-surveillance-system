@@ -280,18 +280,18 @@ def analyze_video(path, detector, cfg, zone, on_event, on_progress=None, stop=la
         risk_level = "HIGH_RISK_CANDIDATE"
         summary = "Physical assault pattern detected with high ballistic kinetic impact jerk and abrupt confrontational motion."
 
-    # 6. Robbery (confrontation followed by rapid fleeing)
-    elif indicators["sudden_fleeing"] and (indicators["violent_combat_dynamics"] or max_iou >= 0.30):
+    # 6. Robbery (violent confrontation followed by rapid fleeing)
+    elif indicators["sudden_fleeing"] and (indicators["violent_combat_dynamics"] or indicators["physical_assault_pattern"] or (violence_prob >= 0.55 and max_jerk >= 12.0)):
         category = "Robbery"
-        score = max(peak_score, 0.78)
+        score = max(violence_prob, 0.80)
         analysis_result = "Risk Detected"
         risk_level = "HIGH_RISK_CANDIDATE"
-        summary = "Robbery / confrontational altercation followed by sudden rapid escape."
+        summary = "Robbery / violent altercation followed by sudden rapid escape."
 
-    # 7. Snatch / Theft
-    elif indicators["sudden_fleeing"] and max_people_in_frame >= 1 and not is_conversation:
+    # 7. Snatch / Theft (Physical snatch altercation followed by sudden fleeing)
+    elif indicators["sudden_fleeing"] and max_people_in_frame >= 2 and violence_prob >= 0.50 and max_jerk >= 10.0:
         category = "Theft and stealing"
-        score = max(peak_score, 0.74)
+        score = max(violence_prob, 0.75)
         analysis_result = "Risk Detected"
         risk_level = "HIGH_RISK_CANDIDATE"
         summary = "Rapid snatch / theft pattern with sudden high-velocity egress."
@@ -305,7 +305,7 @@ def analyze_video(path, detector, cfg, zone, on_event, on_progress=None, stop=la
         summary = "Suspicious loitering / prolonged presence or restricted zone dwell detected."
 
     # 9. Uncertain – Manual Review Required (When models detect ambiguous/elevated motion but insufficient evidence for risk)
-    elif violence_prob >= 0.35 or (0.35 <= max_motion_ratio and not is_conversation and peak_score >= 0.40):
+    elif violence_prob >= 0.55 or (0.45 <= max_motion_ratio and not is_conversation and peak_score >= 0.55):
         category = "Suspicious or unusual activity"
         score = max(violence_prob, 0.52)
         analysis_result = "Uncertain – Manual Review Required"

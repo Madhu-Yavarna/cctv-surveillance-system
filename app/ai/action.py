@@ -83,6 +83,11 @@ class ActionClassifier:
         # Standardize
         norm = (vec - self.scaler_mean) / np.maximum(self.scaler_scale, 1e-6)
         logit = float(np.dot(norm, self.weights) + self.bias)
+        # When physical motion has calm kinetic jerk (no strikes, no rapid ballistic blows), heavily penalize violence logit
+        max_jerk = float(feat_dict.get("max_jerk", 0.0))
+        mean_jerk = float(feat_dict.get("mean_jerk", 0.0))
+        if max_jerk < 11.0 and mean_jerk < 3.5:
+            logit -= 1.5
         # Sigmoid
         prob = 1.0 / (1.0 + math.exp(-max(min(logit, 15.0), -15.0)))
         return prob
@@ -285,6 +290,10 @@ class SpatialTemporalActionRecognizer:
         # Predict violence probability
         violence_prob = self.classifier.predict_proba(features)
         features["violence_prob"] = round(violence_prob, 3)
-        features["is_conversation"] = (conversation_score >= 0.70 and violence_prob < 0.40)
+        max_jerk = features.get("max_jerk", 0.0)
+        features["is_conversation"] = bool(
+            (conversation_score >= 0.55 and violence_prob < 0.50 and max_jerk < 12.0) or
+            (conversation_score >= 0.40 and violence_prob < 0.35 and max_jerk < 9.0)
+        )
         
         return features
