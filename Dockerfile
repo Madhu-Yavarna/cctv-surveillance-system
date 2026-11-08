@@ -3,7 +3,6 @@ FROM python:3.11-slim
 # Prevent python from buffering stdout/stderr
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8000 \
     HOST=0.0.0.0 \
     CCTV_DATA=/app/data
 
@@ -29,6 +28,6 @@ COPY entrypoint.sh .
 
 RUN chmod +x /app/entrypoint.sh
 
-EXPOSE 8000
+EXPOSE 10000 8000
 
 ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
